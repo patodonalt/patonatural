@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout Profissional</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  body {font-family: Arial, sans-serif; background: linear-gradient(135deg,#0d1b2a,#1b263b); color:#fff; margin:0; padding:0;}
+  .container {max-width: 900px; margin:auto; padding:20px;}
+  h1 {text-align:center; color:#00b4d8; margin-bottom:30px;}
+  .products, .buyer-info {display:grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap:20px; margin-bottom:30px;}
+  .card {background:#1e3a5f; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.3);}
+  .card h2 {margin:0 0 10px; color:#90e0ef;}
+  .card label {display:block; margin:5px 0;}
+  .card input {width:100%; padding:8px; border-radius:6px; border:none; margin-top:5px;}
+  .card input.invalid {border:2px solid #ff4d4d;}
+  .error-msg {color:#ff4d4d; font-size:12px; margin-top:3px;}
+  .summary {background:#1e3a5f; padding:20px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.3); margin-bottom:20px;}
+  .summary h2 {margin-top:0; color:#90e0ef;}
+  .product-line {margin-bottom:5px;}
+  .product-flor {color:#90e0ef;}
+  .product-ICE {color:#06d6a0;}
+  .product-MD {color:#fcbf49;}
+  .btn {background:#06d6a0; color:#fff; border:none; padding:12px 20px; font-size:16px; border-radius:8px; cursor:pointer; margin-top:10px; width:100%; transition: background 0.3s;}
+  .btn:hover {background:#05b583;}
+  #qrcode {text-align:center; margin:20px 0;}
+  #pixCode {width:100%; padding:10px; border-radius:8px; border:none; margin-top:10px;}
+  .warning {color:#ffcc00; font-weight:bold; margin:10px 0;}
+  textarea {resize:none;}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Boas Compras</h1>
+
+  <!-- Produtos -->
+  <div class="products">
+    <div class="card">
+      <h2>Flor</h2>
+      <p>R$ 65,00 por grama</p>
+      <label>Quantidade (g):</label>
+      <input type="number" id="flor" min="0" step="1" value="0">
+    </div>
+    <div class="card">
+      <h2>ICE</h2>
+      <p>R$ 120,00 por grama</p>
+      <label>Quantidade (g):</label>
+      <input type="number" id="ICE" min="0" step="1" value="0">
+    </div>
+    <div class="card">
+      <h2>MD</h2>
+      <p>R$ 85,00 por grama</p>
+      <label>Quantidade (g):</label>
+      <input type="number" id="MD" min="0" step="1" value="0">
+    </div>
+  </div>
+
+  <!-- Dados do comprador -->
+  <div class="buyer-info">
+    <div class="card">
+      <h2>DADOS PARA ENTREGA</h2>
+      <label>Nome completo:</label>
+      <input type="text" id="buyerName" placeholder="Nome completo">
+      <div id="errorName" class="error-msg"></div>
+      <label>DIA:</label>
+      <input type="text" id="DIA" placeholder="Dia da entrega">
+      <label>Telefone:</label>
+      <input type="text" id="buyerPhone" placeholder="(XX) XXXXX-XXXX">
+      <div id="errorPhone" class="error-msg"></div>
+      <label>Endereço:</label>
+      <input type="text" id="buyerAddress" placeholder="Rua, nº, bairro">
+      <div id="errorAddress" class="error-msg"></div>
+      <label>Horário de entrega:</label>
+      <input type="time" id="deliveryTime">
+    </div>
+  </div>
+
+  <!-- Resumo -->
+  <div class="summary">
+    <h2>Resumo da Compra</h2>
+    <div id="resumo">Nenhum produto selecionado.</div>
+    <h3>Total: R$ <span id="total">0.00</span></h3>
+    <div id="pesoWarning" class="warning" style="display:none;">O pedido deve ter no mínimo 10g para gerar Pix.</div>
+    <div id="pixWarning" class="warning" style="display:none;">➡️ Para concluir sua compra, copie e cole a chave Pix abaixo e pague o valor exato informado.⬅️</div>
+  </div>
+
+  <!-- Pix -->
+  <div id="qrcode"></div>
+  <textarea id="pixCode" readonly rows="3"></textarea>
+  <button class="btn" onclick="copiarPix()">Copiar Código Pix</button>
+</div>
+
+<script>
+const preco = { flor: 65.00, ICE: 120.00, MD: 85.00 };
+const pixKey = "SUA_CHAVE_PIX_AQUI"; // Substitua pela sua chave Pix
+
+function validarCampos() {
+  let valid = true;
+  const name = document.getElementById('buyerName');
+  const phone = document.getElementById('buyerPhone');
+  const address = document.getElementById('buyerAddress');
+
+  document.getElementById('errorName').innerText = "";
+  document.getElementById('errorPhone').innerText = "";
+  document.getElementById('errorAddress').innerText = "";
+
+  if(!name.value.trim()){
+    name.classList.add('invalid');
+    document.getElementById('errorName').innerText = "Preencha o nome completo";
+    valid = false;
+  } else { name.classList.remove('invalid'); }
+
+  if(!phone.value.trim()){
+    phone.classList.add('invalid');
+    document.getElementById('errorPhone').innerText = "Preencha o telefone";
+    valid = false;
+  } else { phone.classList.remove('invalid'); }
+
+  if(!address.value.trim()){
+    address.classList.add('invalid');
+    document.getElementById('errorAddress').innerText = "Preencha o endereço";
+    valid = false;
+  } else { address.classList.remove('invalid'); }
+
+  return valid;
+}
+
+function calcular() {
+  let qFlor = parseInt(document.getElementById('flor').value) || 0;
+  let qICE = parseInt(document.getElementById('ICE').value) || 0;
+  let qMD = parseInt(document.getElementById('MD').value) || 0;
+
+  let total = qFlor*preco.flor + qICE*preco.ICE + qMD*preco.MD;
+  document.getElementById('total').innerText = total.toFixed(2);
+
+  let pesoTotal = qFlor + qICE + qMD;
+
+  // Atualiza resumo
+  let resumo = [];
+  if(qFlor>0) resumo.push(`<div class="product-line product-flor">Flor: ${qFlor}g - R$ ${(qFlor*preco.flor).toFixed(2)}</div>`);
+  if(qICE>0) resumo.push(`<div class="product-line product-ICE">ICE: ${qICE}g - R$ ${(qICE*preco.ICE).toFixed(2)}</div>`);
+  if(qMD>0) resumo.push(`<div class="product-line product-MD">MD: ${qMD}g - R$ ${(qMD*preco.MD).toFixed(2)}</div>`);
+  document.getElementById('resumo').innerHTML = resumo.length ? resumo.join("") : "Nenhum produto selecionado.";
+
+  if(pesoTotal < 10){
+    document.getElementById('pesoWarning').style.display = "block";
+  } else {
+    document.getElementById('pesoWarning').style.display = "none";
+  }
+
+  if(pesoTotal >= 10 && validarCampos()){
+    gerarPix(total);
+    document.getElementById('pixWarning').style.display = "block";
+  } else {
+    document.getElementById('pixCode').value = "";
+    document.getElementById('qrcode').innerHTML = "";
+    document.getElementById('pixWarning').style.display = "none";
+  }
+}
+
+document.querySelectorAll("input[type=number], input[type=text]").forEach(el => el.addEventListener("input", calcular));
+
+function gerarPix(total) {
+  let payload = "4c27a0d6-405f-488b-a82c-7211fb857292"; // exemplo de payload
+  document.getElementById('pixCode').value = payload;
+  document.getElementById('qrcode').innerHTML = "";
+  new QRCode(document.getElementById("qrcode"), payload);
+}
+
+function copiarPix() {
+  let pix = document.getElementById("pixCode").value;
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(pix).then(() => {
+      alert("Código Pix copiado!");
+    });
+  } else {
+    let textarea = document.createElement("textarea");
+    textarea.value = pix;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+    alert("Código Pix copiado!");
+  }
+}
+</script>
+</body>
+</html>
